@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -33,8 +34,9 @@ type InstallOptions struct {
 	SecretNamePrefixes     []string
 	ConfigMapNamePrefixes  []string
 
-	ResourceDir    string
-	PodManifestDir string
+	ResourceDir          string
+	PodManifestDir       string
+	RevisionHistoryLimit int
 }
 
 func NewInstallOptions() *InstallOptions {
@@ -77,6 +79,7 @@ func (o *InstallOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringSliceVar(&o.ConfigMapNamePrefixes, "configmaps", o.ConfigMapNamePrefixes, "list of configmaps to be included")
 	fs.StringVar(&o.ResourceDir, "resource-dir", o.ResourceDir, "directory for all files supporting the static pod manifest")
 	fs.StringVar(&o.PodManifestDir, "pod-manifest-dir", o.PodManifestDir, "directory for the static pod manifest")
+	fs.IntVar(&o.RevisionHistoryLimit, "revision-history-limit", 0, "limit on installer pod attempts to preserve, 0=unlimited")
 }
 
 func (o *InstallOptions) Complete() error {
@@ -196,6 +199,26 @@ func (o *InstallOptions) copyContent() error {
 	return nil
 }
 
+func (o *InstallOptions) pruneRevisions() error {
+	skipped := 0
+	err := filepath.Walk(o.ResourceDir, func(path string, info os.FileInfo, err error) {
+		if strings.HasPrefix(info.Name(), o.PodConfigMapNamePrefix) && file.IsDir() {
+			if skipped < o.RevisionHistoryLimit {
+				skipped++
+				continue
+			}
+			err := os.RemoveAll(file.Name())
+			if err != nil {
+				return err
+			}
+		}
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (o *InstallOptions) Run() error {
 	// ~2 min total waiting
 	backoff := utilwait.Backoff{
@@ -214,6 +237,13 @@ func (o *InstallOptions) Run() error {
 	})
 	if err != nil {
 		return fmt.Errorf("error: %v", err)
+	}
+
+	if o.RevisionHistoryLimit > 0 {
+		err = o.pruneRevisions()
+		if err != nil {
+			return fmt.Errorf("error pruning old revisions: %v", err)
+		}
 	}
 
 	// TODO wait for healthy pod status

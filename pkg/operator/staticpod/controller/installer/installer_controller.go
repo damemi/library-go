@@ -244,6 +244,7 @@ func (c *InstallerController) createInstallerPod(currNodeState *operatorv1alpha1
 		fmt.Sprintf("--pod=%s", c.configMaps[0]),
 		fmt.Sprintf("--resource-dir=%s", "/etc/kubernetes/static-pod-resources"),
 		fmt.Sprintf("--pod-manifest-dir=%s", "/etc/kubernetes/manifests"),
+		fmt.Sprintf("--revision-history-limit=%d", operatorSpec.RevisionHistoryLimit),
 	)
 	for _, name := range c.configMaps {
 		required.Spec.Containers[0].Args = append(required.Spec.Containers[0].Args, fmt.Sprintf("--configmaps=%s", name))
