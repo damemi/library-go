@@ -167,6 +167,13 @@ func (c *InstallerController) newNodeStateForInstallInProgress(currNodeState *op
 	if err != nil {
 		return nil, err
 	}
+
+	// Store status of this deployment in the status configmap for revision history tracking
+	statusConfigMap, err := c.kubeClient.CoreV1().ConfigMaps(c.targetNamespace).Get(getStatusConfigMapName(currNodeState.TargetDeploymentGeneration, currNodeState.NodeName), metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	statusConfigMap.Data[installerPodname] = installerPod.Status.Phase
 	switch installerPod.Status.Phase {
 	case corev1.PodSucceeded:
 		ret.CurrentDeploymentGeneration = currNodeState.TargetDeploymentGeneration
@@ -220,6 +227,10 @@ func (c *InstallerController) getDeploymentIDToStart(currNodeState, prevNodeStat
 
 func getInstallerPodName(deploymentID int32, nodeName string) string {
 	return fmt.Sprintf("installer-%d-%s", deploymentID, nodeName)
+}
+
+func getStatusConfigMapName(deploymentID int32, nodeName string) string {
+	return fmt.Sprintf("status-%d-%s", deploymentID, nodeName)
 }
 
 // createInstallerPod creates the installer pod with the secrets required to
