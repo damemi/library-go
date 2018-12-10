@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: {{ .TargetNamespace }}
+  name: {{ .Name }}
+  labels:
+    app: pruner
+spec:
+  serviceAccountName: installer-sa
+  nodeName: {{ .NodeName }}
+  containers:
+  - name: pruner
+    command: {{ .Command }}
+    args: {{ .Args }}
+    image: {{ .Image }}
+    imagePullPolicy: {{ .ImagePullPolicy }}
+    securityContext:
+      privileged: true
+      runAsUser: 0
+    terminationMessagePolicy: FallbackToLogsOnError
+    volumeMounts:
+    - mountPath: /etc/kubernetes/
+      name: kubelet-dir
+  restartPolicy: Never
+  securityContext:
+    runAsUser: 0
+  volumes:
+  - hostPath:
+      path: /etc/kubernetes/
+    name: kubelet-dir
