@@ -22,18 +22,24 @@ import (
 
 	operatorv1 "github.com/openshift/api/operator/v1"
 	"github.com/openshift/library-go/pkg/operator/events"
+	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
 	"github.com/openshift/library-go/pkg/operator/staticpod/controller/common"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 )
 
-const operatorStatusInstallerControllerFailing = "InstallerControllerFailing"
-const installerControllerWorkQueueKey = "key"
+const (
+	operatorStatusInstallerControllerFailing = "InstallerControllerFailing"
+	installerControllerWorkQueueKey          = "key"
+
+	revisionLabel       = "revision"
+	statusConfigMapName = "revision-status"
+)
 
 // InstallerController is a controller that watches the currentRevision and targetRevision fields for each node and spawn
 // installer pods to update the static pods on the master nodes.
 type InstallerController struct {
-	targetNamespace, staticPodName string
+	targetNamespace, staticPodName, podResourcePrefix string
 	// configMaps is the list of configmaps that are directly copied.A different actor/controller modifies these.
 	// the first element should be the configmap that contains the static pod manifest
 	configMaps []string
@@ -67,11 +73,9 @@ const (
 	staticPodStateFailed
 )
 
-const revisionLabel = "revision"
-
-// NewBackingResourceController creates a new installer controller.
+// NewInstallerController creates a new installer controller.
 func NewInstallerController(
-	targetNamespace, staticPodName string,
+	targetNamespace, staticPodName, podResourcePrefix string,
 	configMaps []string,
 	secrets []string,
 	command []string,
@@ -81,11 +85,12 @@ func NewInstallerController(
 	eventRecorder events.Recorder,
 ) *InstallerController {
 	c := &InstallerController{
-		targetNamespace: targetNamespace,
-		staticPodName:   staticPodName,
-		configMaps:      configMaps,
-		secrets:         secrets,
-		command:         command,
+		targetNamespace:   targetNamespace,
+		staticPodName:     staticPodName,
+		podResourcePrefix: podResourcePrefix,
+		configMaps:        configMaps,
+		secrets:           secrets,
+		command:           command,
 
 		operatorConfigClient: operatorConfigClient,
 		kubeClient:           kubeClient,
@@ -179,6 +184,23 @@ func (c *InstallerController) manageInstallationPods(operatorSpec *operatorv1.Op
 		return false, nil
 	}
 
+	// Store success/fail status in the status configmap for revision history tracking
+	statusConfigMap, err := c.kubeClient.CoreV1().ConfigMaps(c.targetNamespace).Get(statusConfigMapName, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		statusConfigMapObject := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Namespace: c.targetNamespace, Name: statusConfigMapName},
+			Data: map[string]string{
+				"phase": "InProgress",
+			},
+		}
+		statusConfigMap, _, err = resourceapply.ApplyConfigMap(c.kubeClient.CoreV1(), c.eventRecorder, statusConfigMapObject)
+		if err != nil {
+			return true, err
+		}
+	}
+
+	phaseStatus := string(corev1.PodSucceeded)
+
 	// start with node which is in worst state (instead of terminating healthy pods first)
 	startNode, err := nodeToStartRevisionWith(c.getStaticPodState, operatorStatus.NodeStatuses)
 	if err != nil {
@@ -196,6 +218,9 @@ func (c *InstallerController) manageInstallationPods(operatorSpec *operatorv1.Op
 			prevNodeState = &operatorStatus.NodeStatuses[prev]
 		}
 
+		statusConfigMap.Name = statusConfigMapNameForRevision(currNodeState.CurrentRevision)
+		statusConfigMap.Data["revision"] = fmt.Sprintf("%d", currNodeState.CurrentRevision)
+
 		// if we are in a transition, check to see if our installer pod completed
 		if currNodeState.TargetRevision > currNodeState.CurrentRevision {
 			if err := c.ensureInstallerPod(currNodeState.NodeName, operatorSpec, currNodeState.TargetRevision); err != nil {
@@ -208,6 +233,10 @@ func (c *InstallerController) manageInstallationPods(operatorSpec *operatorv1.Op
 			newCurrNodeState, err := c.newNodeStateForInstallInProgress(currNodeState, pendingNewRevision)
 			if err != nil {
 				return true, err
+			}
+
+			if newCurrNodeState.LastFailedRevision != 0 {
+				phaseStatus = string(corev1.PodFailed)
 			}
 
 			// if we make a change to this status, we want to write it out to the API before we commence work on the next node.
@@ -253,6 +282,11 @@ func (c *InstallerController) manageInstallationPods(operatorSpec *operatorv1.Op
 			return false, nil
 		}
 		break
+	}
+
+	_, _, err = resourceapply.ApplyConfigMap(c.kubeClient.CoreV1(), c.eventRecorder, statusConfigMap)
+	if err != nil {
+		return true, err
 	}
 
 	return false, nil
@@ -540,6 +574,10 @@ func (c *InstallerController) eventHandler() cache.ResourceEventHandler {
 
 func mirrorPodNameForNode(staticPodName, nodeName string) string {
 	return staticPodName + "-" + nodeName
+}
+
+func statusConfigMapNameForRevision(revision int32) string {
+	return fmt.Sprintf("%s-%d", statusConfigMapName, revision)
 }
 
 const installerPod = `apiVersion: v1

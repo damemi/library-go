@@ -2,6 +2,8 @@ package staticpod
 
 import (
 	"github.com/openshift/library-go/pkg/operator/events"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 
@@ -9,12 +11,14 @@ import (
 	"github.com/openshift/library-go/pkg/operator/staticpod/controller/common"
 	"github.com/openshift/library-go/pkg/operator/staticpod/controller/installer"
 	"github.com/openshift/library-go/pkg/operator/staticpod/controller/node"
+	"github.com/openshift/library-go/pkg/operator/staticpod/controller/prune"
 	"github.com/openshift/library-go/pkg/operator/staticpod/controller/revision"
 )
 
 type staticPodOperatorControllers struct {
 	revisionController       *revision.RevisionController
 	installerController      *installer.InstallerController
+	pruneController          *prune.PruneController
 	nodeController           *node.NodeController
 	serviceAccountController *backingresource.BackingResourceController
 }
@@ -27,9 +31,10 @@ type staticPodOperatorControllers struct {
 //    appears that doesn't match the current latest for first kubeletStatus and the first kubeletStatus isn't already transitioning,
 //    it kicks off an installer pod.  If the next kubeletStatus doesn't match the immediate prior one, it kicks off that transition.
 // 3. NodeController - watches nodes for master nodes and keeps the operator status up to date
-func NewControllers(targetNamespaceName, staticPodName string, command, revisionConfigMaps, revisionSecrets []string,
+func NewControllers(targetNamespaceName, staticPodName, podResourcePrefix string, installerCommand, prunerCommand, revisionConfigMaps, revisionSecrets []string,
 	staticPodOperatorClient common.OperatorClient, kubeClient kubernetes.Interface, kubeInformersNamespaceScoped,
-	kubeInformersClusterScoped informers.SharedInformerFactory, eventRecorder events.Recorder) *staticPodOperatorControllers {
+	kubeInformersClusterScoped informers.SharedInformerFactory, eventRecorder events.Recorder,
+	dynamicClient dynamic.Interface, operatorConfigGVR schema.GroupVersionResource, operatorConfigName string) *staticPodOperatorControllers {
 	controller := &staticPodOperatorControllers{}
 
 	controller.revisionController = revision.NewRevisionController(
@@ -45,13 +50,26 @@ func NewControllers(targetNamespaceName, staticPodName string, command, revision
 	controller.installerController = installer.NewInstallerController(
 		targetNamespaceName,
 		staticPodName,
+		podResourcePrefix,
 		revisionConfigMaps,
 		revisionSecrets,
-		command,
+		installerCommand,
 		kubeInformersNamespaceScoped,
 		staticPodOperatorClient,
 		kubeClient,
 		eventRecorder,
+	)
+
+	controller.pruneController = prune.NewPruneController(
+		targetNamespaceName,
+		podResourcePrefix,
+		prunerCommand,
+		kubeClient,
+		staticPodOperatorClient,
+		eventRecorder,
+		dynamicClient,
+		operatorConfigGVR,
+		operatorConfigName,
 	)
 
 	controller.nodeController = node.NewNodeController(
@@ -75,6 +93,7 @@ func (o *staticPodOperatorControllers) Run(stopCh <-chan struct{}) {
 	go o.serviceAccountController.Run(1, stopCh)
 	go o.revisionController.Run(1, stopCh)
 	go o.installerController.Run(1, stopCh)
+	go o.pruneController.Run(1, stopCh)
 	go o.nodeController.Run(1, stopCh)
 
 	<-stopCh
