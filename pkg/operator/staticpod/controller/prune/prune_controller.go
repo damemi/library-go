@@ -12,7 +12,6 @@ import (
 	"github.com/golang/glog"
 
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -24,12 +23,11 @@ import (
 	"k8s.io/client-go/util/workqueue"
 
 	operatorv1 "github.com/openshift/api/operator/v1"
-	"github.com/openshift/library-go/pkg/assets"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceread"
 	"github.com/openshift/library-go/pkg/operator/staticpod/controller/common"
-	"github.com/openshift/library-go/pkg/operator/staticpod/controller/installer/bindata"
+	"github.com/openshift/library-go/pkg/operator/staticpod/controller/prune/bindata"
 )
 
 // PruneController is a controller that watches static installer pod revision statuses and spawns
@@ -57,7 +55,7 @@ type PruneController struct {
 
 const (
 	pruneControllerWorkQueueKey = "key"
-	statusConfigMapName         = "revision-status"
+	statusConfigMapName         = "revision-status-"
 	defaultResourceDir          = "/etc/kubernetes/static-pod-resources"
 
 	manifestDir           = "pkg/operator/staticpod/controller/prune"
@@ -165,16 +163,20 @@ func (c *PruneController) pruneRevisionHistory(operatorStatus *operatorv1.Static
 				succeededRevisionIDs = append(succeededRevisionIDs, revisionID)
 			case string(corev1.PodFailed):
 				failedRevisionIDs = append(failedRevisionIDs, revisionID)
+			default:
+				return fmt.Errorf("unknown pod status phase for revision %d: %v", revisionID, configMap.Data["phase"])
 			}
 		}
 	}
 
-	sort.Ints(succeededRevisionIDs)
-	sort.Ints(failedRevisionIDs)
+	// Return early if nothing to prune
+	if len(succeededRevisionIDs)+len(failedRevisionIDs) == 0 {
+		return nil
+	}
 
 	// Get list of protected IDs
-	protectedSucceededRevisionIDs := succeededRevisionIDs[revisionKeyToStart(len(succeededRevisionIDs), c.succeededRevisionLimit):]
-	protectedFailedRevisionIDs := failedRevisionIDs[revisionKeyToStart(len(failedRevisionIDs), c.failedRevisionLimit):]
+	protectedSucceededRevisionIDs := protectedIDs(succeededRevisionIDs, c.succeededRevisionLimit)
+	protectedFailedRevisionIDs := protectedIDs(failedRevisionIDs, c.failedRevisionLimit)
 
 	excludedIDs := make([]int, 0, len(protectedSucceededRevisionIDs)+len(protectedFailedRevisionIDs))
 	excludedIDs = append(excludedIDs, protectedSucceededRevisionIDs...)
@@ -183,75 +185,52 @@ func (c *PruneController) pruneRevisionHistory(operatorStatus *operatorv1.Static
 
 	// Run pruning pod on each node and pin it to that node
 	for _, nodeStatus := range operatorStatus.NodeStatuses {
-		if err := c.ensurePrunePod(prunerPodName, nodeStatus.NodeName, excludedIDs[len(excludedIDs)-1], excludedIDs, nodeStatus.TargetRevision); err != nil {
+		if err := c.ensurePrunePod(nodeStatus.NodeName, excludedIDs[len(excludedIDs)-1], excludedIDs, nodeStatus.TargetRevision); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func revisionKeyToStart(length, limit int) int {
-	if length > limit {
-		return length - limit
+func protectedIDs(revisionIDs []int, revisionLimit int) []int {
+	sort.Ints(revisionIDs)
+	if len(revisionIDs) == 0 {
+		return revisionIDs
 	}
-	return 0
+	return revisionIDs[protectedRevisionKeyToStart(len(revisionIDs), revisionLimit):]
 }
 
-// Example: []string{"1", "2"} will convert to: '["1","2"]'
-func toJSONArray(arr []string) string {
-	result, err := json.Marshal(arr)
-	if err != nil {
-		panic(err)
+func protectedRevisionKeyToStart(length, limit int) int {
+	// 0 = default = unlimited revisions (ie, protect everything)
+	if limit == 0 || length < limit {
+		return 0
 	}
-	return string(result)
+	return length - limit
 }
 
-func (c PruneController) mustPrunePodTemplateAsset(nodeName string, revision int32) ([]byte, error) {
-	config := struct {
-		TargetNamespace string
-		Name            string
-		NodeName        string
-		Image           string
-		ImagePullPolicy string
-		Command         string
-		Args            string
-	}{
-		Name:            getPrunerPodName(nodeName, revision),
-		TargetNamespace: c.targetNamespace,
-		NodeName:        nodeName,
-		Image:           c.prunerPodImageFn(),
-		ImagePullPolicy: "Always",
-		Command:         toJSONArray(c.command),
-	}
+func (c *PruneController) ensurePrunePod(nodeName string, maxEligibleRevision int, protectedRevisions []int, revision int32) error {
+	podBytes := bindata.MustAsset(filepath.Join("pkg/operator/staticpod/controller/prune", "manifests/pruner-pod.yaml"))
+	pod := resourceread.ReadPodV1OrDie(podBytes)
 
-	args := []string{
+	pod.Name = getPrunerPodName(nodeName, revision)
+	pod.Namespace = c.targetNamespace
+	pod.Spec.NodeName = nodeName
+	pod.Spec.Containers[0].Image = c.prunerPodImageFn()
+	pod.Spec.Containers[0].Command = c.command
+	pod.Spec.Containers[0].Args = append(pod.Spec.Containers[0].Args,
 		fmt.Sprintf("-v=%d", 4),
 		fmt.Sprintf("--max-eligible-id=%d", maxEligibleRevision),
 		fmt.Sprintf("--protected-ids=%s", revisionsToString(protectedRevisions)),
 		fmt.Sprintf("--resource-dir=%s", defaultResourceDir),
 		fmt.Sprintf("--static-pod-name=%s", c.podResourcePrefix),
-	}
-	config.Args = toJSONArray(args)
+	)
 
-	return assets.MustCreateAssetFromTemplate(manifestPrunerPodPath, bindata.MustAsset(filepath.Join(manifestDir, manifestPrunerPodPath)), config).Data, nil
-}
-
-func (c *PruneController) ensurePrunePod(podName, nodeName string, maxEligibleRevision int, protectedRevisions []int, revision int32) error {
-	assetFunc := func(string) ([]byte, error) {
-		return c.mustPrunerPodTemplateAsset(nodeName, revision)
-	}
-	directResourceResults := resourceapply.ApplyDirectly(c.kubeClient, c.eventRecorder, assetFunc, manifestPrunerPodPath)
-	var errs []error
-	for _, currResult := range directResourceResults {
-		if currResult.Error != nil {
-			errs = append(errs, fmt.Errorf("%q (%T): %v", currResult.File, currResult.Type, currResult.Error))
-		}
-	}
-	return common.NewMultiLineAggregate(errs)
+	_, _, err := resourceapply.ApplyPod(c.kubeClient.CoreV1(), c.eventRecorder, pod)
+	return err
 }
 
 func getPrunerPodName(nodeName string, revision int32) string {
-	return fmt.Sprintf("%s-%d-%s", prunerPodName, revision, nodeName)
+	return fmt.Sprintf("revision-pruner-%d-%s", revision, nodeName)
 }
 
 func revisionsToString(revisions []int) string {
