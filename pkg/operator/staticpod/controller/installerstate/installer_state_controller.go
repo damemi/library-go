@@ -59,7 +59,7 @@ var degradedConditionNames = []string{
 }
 
 func (c *InstallerStateController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
-	pods, err := c.podsGetter.Pods(c.targetNamespace).List(metav1.ListOptions{
+	pods, err := c.podsGetter.Pods(c.targetNamespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(labels.Set{"app": "installer"}).String(),
 	})
 	if err != nil {
@@ -116,7 +116,7 @@ func (c *InstallerStateController) handlePendingInstallerPodsNetworkEvents(recor
 	if len(pods) == 0 {
 		return conditions, nil
 	}
-	namespaceEvents, err := c.eventsGetter.Events(c.targetNamespace).List(metav1.ListOptions{})
+	namespaceEvents, err := c.eventsGetter.Events(c.targetNamespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}

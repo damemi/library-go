@@ -153,7 +153,7 @@ func (c InstallerController) Name() string {
 }
 
 func (c *InstallerController) getStaticPodState(nodeName string) (state staticPodState, revision, reason string, errors []string, err error) {
-	pod, err := c.podsGetter.Pods(c.targetNamespace).Get(mirrorPodNameForNode(c.staticPodName, nodeName), metav1.GetOptions{})
+	pod, err := c.podsGetter.Pods(c.targetNamespace).Get(context.TODO(), mirrorPodNameForNode(c.staticPodName, nodeName), metav1.GetOptions{})
 	if err != nil {
 		return staticPodStatePending, "", "", nil, err
 	}
@@ -337,7 +337,7 @@ func (c *InstallerController) manageInstallationPods(operatorSpec *operatorv1.St
 			}
 			klog.Infof("Retrying %q for revision %d because %s", currNodeState.NodeName, currNodeState.TargetRevision, reason)
 			installerPodName := getInstallerPodName(currNodeState.TargetRevision, currNodeState.NodeName)
-			if err := c.podsGetter.Pods(c.targetNamespace).Delete(installerPodName, &metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
+			if err := c.podsGetter.Pods(c.targetNamespace).Delete(context.TODO(), installerPodName, metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
 				return true, err
 			}
 		}
@@ -393,7 +393,7 @@ func (c *InstallerController) updateRevisionStatus(operatorStatus *operatorv1.St
 
 func (c *InstallerController) updateConfigMapForRevision(currentRevisions map[int32]struct{}, status string) error {
 	for currentRevision := range currentRevisions {
-		statusConfigMap, err := c.configMapsGetter.ConfigMaps(c.targetNamespace).Get(statusConfigMapNameForRevision(currentRevision), metav1.GetOptions{})
+		statusConfigMap, err := c.configMapsGetter.ConfigMaps(c.targetNamespace).Get(context.TODO(), statusConfigMapNameForRevision(currentRevision), metav1.GetOptions{})
 		if apierrors.IsNotFound(err) {
 			klog.Infof("%s configmap not found, skipping update revision status", statusConfigMapNameForRevision(currentRevision))
 			continue
@@ -519,7 +519,7 @@ func setAvailableProgressingNodeInstallerFailingConditions(newStatus *operatorv1
 // newNodeStateForInstallInProgress returns the new NodeState, whether it was killed by OOM or an error
 func (c *InstallerController) newNodeStateForInstallInProgress(currNodeState *operatorv1.NodeStatus, latestRevisionAvailable int32) (status *operatorv1.NodeStatus, installerPodFailed bool, reason string, err error) {
 	ret := currNodeState.DeepCopy()
-	installerPod, err := c.podsGetter.Pods(c.targetNamespace).Get(getInstallerPodName(currNodeState.TargetRevision, currNodeState.NodeName), metav1.GetOptions{})
+	installerPod, err := c.podsGetter.Pods(c.targetNamespace).Get(context.TODO(), getInstallerPodName(currNodeState.TargetRevision, currNodeState.NodeName), metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
 		ret.LastFailedRevision = currNodeState.TargetRevision
 		ret.TargetRevision = currNodeState.CurrentRevision
@@ -714,7 +714,7 @@ func (c *InstallerController) ensureInstallerPod(nodeName string, operatorSpec *
 
 func (c *InstallerController) setOwnerRefs(revision int32) ([]metav1.OwnerReference, error) {
 	ownerReferences := []metav1.OwnerReference{}
-	statusConfigMap, err := c.configMapsGetter.ConfigMaps(c.targetNamespace).Get(fmt.Sprintf("revision-status-%d", revision), metav1.GetOptions{})
+	statusConfigMap, err := c.configMapsGetter.ConfigMaps(c.targetNamespace).Get(context.TODO(), fmt.Sprintf("revision-status-%d", revision), metav1.GetOptions{})
 	if err == nil {
 		ownerReferences = append(ownerReferences, metav1.OwnerReference{
 			APIVersion: "v1",
@@ -740,7 +740,7 @@ func (c InstallerController) ensureSecretRevisionResourcesExists(secrets []revis
 		if !hasRevisionSuffix {
 			name = fmt.Sprintf("%s-%d", name, latestRevisionNumber)
 		}
-		_, err := c.secretsGetter.Secrets(c.targetNamespace).Get(name, metav1.GetOptions{})
+		_, err := c.secretsGetter.Secrets(c.targetNamespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if err == nil {
 			continue
 		}
@@ -764,7 +764,7 @@ func (c InstallerController) ensureConfigMapRevisionResourcesExists(configs []re
 		if !hasRevisionSuffix {
 			name = fmt.Sprintf("%s-%d", name, latestRevisionNumber)
 		}
-		_, err := c.configMapsGetter.ConfigMaps(c.targetNamespace).Get(name, metav1.GetOptions{})
+		_, err := c.configMapsGetter.ConfigMaps(c.targetNamespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if err == nil {
 			continue
 		}
