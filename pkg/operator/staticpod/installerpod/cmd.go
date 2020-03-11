@@ -17,7 +17,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
-	kubernetes "k8s.io/client-go/deprecated"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
 	"github.com/openshift/library-go/pkg/config/client"
@@ -302,7 +302,7 @@ func (o *InstallOptions) copyContent(ctx context.Context) error {
 
 	err := retry.RetryOnConnectionErrors(ctx, func(ctx context.Context) (bool, error) {
 		klog.Infof("Getting pod configmaps/%s -n %s", o.nameFor(o.PodConfigMapNamePrefix), o.Namespace)
-		podConfigMap, err := o.KubeClient.CoreV1().ConfigMaps(o.Namespace).Get(o.nameFor(o.PodConfigMapNamePrefix), metav1.GetOptions{})
+		podConfigMap, err := o.KubeClient.CoreV1().ConfigMaps(o.Namespace).Get(context.TODO(), o.nameFor(o.PodConfigMapNamePrefix), metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
