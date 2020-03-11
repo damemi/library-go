@@ -10,8 +10,8 @@ import (
 	"k8s.io/klog"
 
 	corev1 "k8s.io/api/core/v1"
+	kubernetes "k8s.io/client-go/deprecated"
 	"k8s.io/client-go/informers"
-	"k8s.io/client-go/deprecated"
 	"k8s.io/client-go/rest"
 
 	"github.com/openshift/library-go/pkg/config/client"

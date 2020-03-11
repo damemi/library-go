@@ -12,8 +12,8 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
+	kubernetes "k8s.io/client-go/deprecated"
 	kubeinformers "k8s.io/client-go/informers"
-	"k8s.io/client-go/deprecated"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
@@ -100,7 +100,7 @@ func (c *APIServiceController) sync() error {
 			return errors.NewAggregate(errs)
 		}
 		for _, apiService := range apiServices {
-			if err := c.apiregistrationv1Client.APIServices().Delete(apiService.Name, nil); err != nil {
+			if err := c.apiregistrationv1Client.APIServices().Delete(context.TODO(), apiService.Name, metav1.DeleteOptions{}); err != nil {
 				errs = append(errs, err)
 			}
 		}
@@ -301,7 +301,7 @@ func (a *APIServicesToManage) GetAPIServicesToManage() ([]*apiregistrationv1.API
 }
 
 func (a *APIServicesToManage) isAPIServiceAnnotatedByExternalServer(apiService *apiregistrationv1.APIService) bool {
-	existingApiService, err := a.apiregistrationv1Client.APIServices().Get(apiService.Name, metav1.GetOptions{})
+	existingApiService, err := a.apiregistrationv1Client.APIServices().Get(context.TODO(), apiService.Name, metav1.GetOptions{})
 	if err != nil {
 		a.eventRecorder.Warningf("APIServicesToManageAnnotation", "unable to determine if the following API Service %s was annotated by an external operator (it should be) due to %v", apiService.Name, err)
 		return false

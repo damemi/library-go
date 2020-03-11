@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 
 	"k8s.io/apimachinery/pkg/api/errors"
+	kubernetes "k8s.io/client-go/deprecated"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
-	"k8s.io/client-go/deprecated"
 	rbaclisterv1 "k8s.io/client-go/listers/rbac/v1"
 	"k8s.io/klog"
 

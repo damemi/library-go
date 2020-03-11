@@ -8,8 +8,8 @@ import (
 	"github.com/openshift/library-go/pkg/operator/staticresourcecontroller"
 
 	"k8s.io/apimachinery/pkg/util/errors"
+	kubernetes "k8s.io/client-go/deprecated"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/deprecated"
 	"k8s.io/klog"
 
 	"github.com/openshift/library-go/pkg/operator/events"

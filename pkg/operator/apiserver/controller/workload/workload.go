@@ -24,7 +24,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/deprecated"
+	kubernetes "k8s.io/client-go/deprecated"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -246,7 +246,7 @@ func (c *Controller) shouldSync(operatorSpec *operatorv1.OperatorSpec) (bool, er
 
 // preconditionFulfilled checks if kube-apiserver is present and available
 func (c *Controller) preconditionFulfilled(operatorSpec *operatorv1.OperatorSpec) (bool, error) {
-	kubeAPIServerClusterOperator, err := c.openshiftClusterConfigClient.Get("kube-apiserver", metav1.GetOptions{})
+	kubeAPIServerClusterOperator, err := c.openshiftClusterConfigClient.Get(context.TODO(), "kube-apiserver", metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
 		message := "clusteroperator/kube-apiserver not found"
 		c.eventRecorder.Warning("PrereqNotReady", message)

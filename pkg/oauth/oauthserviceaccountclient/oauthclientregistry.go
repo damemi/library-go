@@ -1,6 +1,7 @@
 package oauthserviceaccountclient
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/url"
@@ -393,13 +394,13 @@ func (a *saOAuthClientAdapter) redirectURIsFromRoutes(namespace string, osRouteN
 	routeErrors := []error{}
 	routeInterface := a.routeClient.Routes(namespace)
 	if osRouteNames.Len() > 1 {
-		if r, err := routeInterface.List(metav1.ListOptions{}); err == nil {
+		if r, err := routeInterface.List(context.TODO(), metav1.ListOptions{}); err == nil {
 			routes = r.Items
 		} else {
 			routeErrors = append(routeErrors, err)
 		}
 	} else {
-		if r, err := routeInterface.Get(osRouteNames.List()[0], metav1.GetOptions{}); err == nil {
+		if r, err := routeInterface.Get(context.TODO(), osRouteNames.List()[0], metav1.GetOptions{}); err == nil {
 			routes = append(routes, *r)
 		} else {
 			routeErrors = append(routeErrors, err)

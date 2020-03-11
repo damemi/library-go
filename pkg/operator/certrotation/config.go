@@ -7,7 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/deprecated"
+	kubernetes "k8s.io/client-go/deprecated"
 )
 
 // GetCertRotationScale  The normal scale is based on a day.  The value returned by this function

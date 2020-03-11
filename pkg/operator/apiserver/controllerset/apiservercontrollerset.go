@@ -3,6 +3,7 @@ package apiservercontrollerset
 import (
 	"context"
 	"fmt"
+
 	configv1 "github.com/openshift/api/config/v1"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	openshiftconfigclientv1 "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
@@ -18,9 +19,9 @@ import (
 	"github.com/openshift/library-go/pkg/operator/unsupportedconfigoverridescontroller"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	"k8s.io/apimachinery/pkg/util/errors"
-	kubeinformers "k8s.io/client-go/informers"
-	"k8s.io/client-go/deprecated"
+	kubernetes "k8s.io/client-go/deprecated"
 	corev1client "k8s.io/client-go/deprecated/typed/core/v1"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 	apiregistrationv1client "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/typed/apiregistration/v1"
 	apiregistrationinformers "k8s.io/kube-aggregator/pkg/client/informers/externalversions"
