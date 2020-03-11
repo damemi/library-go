@@ -18,7 +18,7 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
 	apiserverserviceaccount "k8s.io/apiserver/pkg/authentication/serviceaccount"
-	kcoreclient "k8s.io/client-go/kubernetes/typed/core/v1"
+	kcoreclient "k8s.io/client-go/deprecated/typed/core/v1"
 	"k8s.io/client-go/tools/record"
 
 	oauthv1 "github.com/openshift/api/oauth/v1"

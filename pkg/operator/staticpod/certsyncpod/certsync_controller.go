@@ -11,8 +11,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/informers"
-	"k8s.io/client-go/kubernetes"
-	corev1interface "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/deprecated"
+	corev1interface "k8s.io/client-go/deprecated/typed/core/v1"
 	v1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/klog"
 

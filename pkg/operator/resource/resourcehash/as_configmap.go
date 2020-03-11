@@ -11,8 +11,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/listers/core/v1"
+	kubernetes "k8s.io/client-go/deprecated"
+	v1 "k8s.io/client-go/listers/core/v1"
 )
 
 // GetConfigMapHash returns a hash of the configmap data

@@ -9,7 +9,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/deprecated"
 	"k8s.io/klog"
 
 	"github.com/openshift/library-go/pkg/operator/events"

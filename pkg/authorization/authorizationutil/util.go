@@ -7,7 +7,7 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apiserver/pkg/authentication/user"
-	authorizationclient "k8s.io/client-go/kubernetes/typed/authorization/v1"
+	authorizationclient "k8s.io/client-go/deprecated/typed/authorization/v1"
 )
 
 // AddUserToSAR adds the requisite user information to a SubjectAccessReview.

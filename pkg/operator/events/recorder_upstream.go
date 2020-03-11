@@ -6,8 +6,8 @@ import (
 	"k8s.io/klog"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes/scheme"
-	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/deprecated/scheme"
+	corev1client "k8s.io/client-go/deprecated/typed/core/v1"
 	"k8s.io/client-go/tools/record"
 )
 

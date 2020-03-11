@@ -10,7 +10,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/informers"
 	coreinformersv1 "k8s.io/client-go/informers/core/v1"
-	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/deprecated/fake"
 
 	"github.com/openshift/library-go/pkg/operator/events"
 )

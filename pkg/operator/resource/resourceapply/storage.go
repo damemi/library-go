@@ -7,7 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	storageclientv1 "k8s.io/client-go/kubernetes/typed/storage/v1"
+	storageclientv1 "k8s.io/client-go/deprecated/typed/storage/v1"
 
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"

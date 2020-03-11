@@ -5,7 +5,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/deprecated/fake"
 
 	"github.com/openshift/library-go/pkg/operator/events"
 )

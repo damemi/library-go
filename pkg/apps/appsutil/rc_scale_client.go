@@ -3,9 +3,10 @@ package appsutil
 import (
 	"fmt"
 
+	kubernetes "k8s.io/client-go/deprecated"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
 	scaleclient "k8s.io/client-go/scale"
 	"k8s.io/client-go/scale/scheme/autoscalingv1"
 )

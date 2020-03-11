@@ -18,7 +18,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apiserver/pkg/server"
-	"k8s.io/client-go/kubernetes"
+	kubernetes "k8s.io/client-go/deprecated"
 	"k8s.io/klog"
 
 	"github.com/openshift/library-go/pkg/config/client"

@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/diff"
 	apiserverconfigv1 "k8s.io/apiserver/pkg/apis/config/v1"
-	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/deprecated/fake"
 	clientgotesting "k8s.io/client-go/testing"
 
 	configv1 "github.com/openshift/api/config/v1"

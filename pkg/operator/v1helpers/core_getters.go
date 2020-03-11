@@ -7,7 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	corev1client "k8s.io/client-go/deprecated/typed/core/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 )
 

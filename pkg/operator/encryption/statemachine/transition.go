@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	apiserverconfigv1 "k8s.io/apiserver/pkg/apis/config/v1"
-	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	corev1client "k8s.io/client-go/deprecated/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog"
 

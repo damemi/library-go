@@ -14,7 +14,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
-	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	corev1client "k8s.io/client-go/deprecated/typed/core/v1"
 	"k8s.io/client-go/util/workqueue"
 
 	"github.com/openshift/library-go/pkg/controller/factory"

@@ -4,7 +4,7 @@ import (
 	"os"
 	"sync"
 
-	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	corev1client "k8s.io/client-go/deprecated/typed/core/v1"
 
 	"github.com/openshift/library-go/pkg/operator/events"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"

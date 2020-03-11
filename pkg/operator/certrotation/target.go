@@ -17,7 +17,7 @@ import (
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	corev1informers "k8s.io/client-go/informers/core/v1"
-	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	corev1client "k8s.io/client-go/deprecated/typed/core/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 )
 

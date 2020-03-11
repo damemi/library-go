@@ -12,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	coreclientv1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	coreclientv1 "k8s.io/client-go/deprecated/typed/core/v1"
 
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"

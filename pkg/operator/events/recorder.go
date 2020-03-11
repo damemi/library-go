@@ -6,12 +6,12 @@ import (
 	"os"
 	"time"
 
-	"k8s.io/client-go/kubernetes"
+	kubernetes "k8s.io/client-go/deprecated"
 	"k8s.io/klog"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	corev1client "k8s.io/client-go/deprecated/typed/core/v1"
 )
 
 // Recorder is a simple event recording interface.

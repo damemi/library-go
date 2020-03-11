@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	rbacclientv1 "k8s.io/client-go/kubernetes/typed/rbac/v1"
+	rbacclientv1 "k8s.io/client-go/deprecated/typed/rbac/v1"
 
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resource/resourcemerge"

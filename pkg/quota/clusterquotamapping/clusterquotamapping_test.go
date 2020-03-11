@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/watch"
 	kexternalinformers "k8s.io/client-go/informers"
-	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/deprecated/fake"
 	clientgotesting "k8s.io/client-go/testing"
 
 	quotav1 "github.com/openshift/api/quota/v1"
