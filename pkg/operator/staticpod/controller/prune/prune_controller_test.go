@@ -1,6 +1,7 @@
 package prune
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -228,7 +229,7 @@ func TestPruneAPIResources(t *testing.T) {
 			t.Fatalf("unexpected error %q", apiErr)
 		}
 
-		statusConfigMaps, err := c.configMapGetter.ConfigMaps(tc.targetNamespace).List(metav1.ListOptions{})
+		statusConfigMaps, err := c.configMapGetter.ConfigMaps(tc.targetNamespace).List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			t.Fatalf("unexpected error %q", err)
 		}
