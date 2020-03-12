@@ -84,7 +84,7 @@ func (c *APIServiceController) sync(ctx context.Context, syncCtx factory.SyncCon
 			return errors.NewAggregate(errs)
 		}
 		for _, apiService := range apiServices {
-			if err := c.apiregistrationv1Client.APIServices().Delete(context.TODO(), apiService.Name, metav1.DeleteOptions{}); err != nil {
+			if err := c.apiregistrationv1Client.APIServices().Delete(ctx, apiService.Name, metav1.DeleteOptions{}); err != nil {
 				errs = append(errs, err)
 			}
 		}
