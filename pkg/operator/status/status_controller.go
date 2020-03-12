@@ -115,7 +115,7 @@ func (c StatusSyncer) Sync(ctx context.Context, syncCtx factory.SyncContext) err
 	if originalClusterOperatorObj == nil || apierrors.IsNotFound(err) {
 		klog.Infof("clusteroperator/%s not found", c.clusterOperatorName)
 		var createErr error
-		originalClusterOperatorObj, createErr = c.clusterOperatorClient.ClusterOperators().Create(context.TODO(), &configv1.ClusterOperator{
+		originalClusterOperatorObj, createErr = c.clusterOperatorClient.ClusterOperators().Create(ctx, &configv1.ClusterOperator{
 			ObjectMeta: metav1.ObjectMeta{Name: c.clusterOperatorName},
 		}, metav1.CreateOptions{})
 		if apierrors.IsNotFound(createErr) {
@@ -142,7 +142,7 @@ func (c StatusSyncer) Sync(ctx context.Context, syncCtx factory.SyncContext) err
 		if equality.Semantic.DeepEqual(clusterOperatorObj, originalClusterOperatorObj) {
 			return nil
 		}
-		if _, updateErr := c.clusterOperatorClient.ClusterOperators().UpdateStatus(context.TODO(), clusterOperatorObj, metav1.UpdateOptions{}); err != nil {
+		if _, updateErr := c.clusterOperatorClient.ClusterOperators().UpdateStatus(ctx, clusterOperatorObj, metav1.UpdateOptions{}); err != nil {
 			return updateErr
 		}
 		syncCtx.Recorder().Eventf("OperatorStatusChanged", "Status for operator %s changed: %s", c.clusterOperatorName, configv1helpers.GetStatusDiff(originalClusterOperatorObj.Status, clusterOperatorObj.Status))
@@ -171,7 +171,7 @@ func (c StatusSyncer) Sync(ctx context.Context, syncCtx factory.SyncContext) err
 	}
 	klog.V(2).Infof("clusteroperator/%s diff %v", c.clusterOperatorName, resourceapply.JSONPatchNoError(originalClusterOperatorObj, clusterOperatorObj))
 
-	if _, updateErr := c.clusterOperatorClient.ClusterOperators().UpdateStatus(context.TODO(), clusterOperatorObj, metav1.UpdateOptions{}); err != nil {
+	if _, updateErr := c.clusterOperatorClient.ClusterOperators().UpdateStatus(ctx, clusterOperatorObj, metav1.UpdateOptions{}); err != nil {
 		return updateErr
 	}
 	syncCtx.Recorder().Eventf("OperatorStatusChanged", "Status for clusteroperator/%s changed: %s", c.clusterOperatorName, configv1helpers.GetStatusDiff(originalClusterOperatorObj.Status, clusterOperatorObj.Status))
