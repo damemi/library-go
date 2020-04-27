@@ -1,6 +1,7 @@
 package v1helpers
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -10,6 +11,8 @@ import (
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	corev1listers "k8s.io/client-go/listers/core/v1"
+
+	"github.com/openshift/library-go/pkg/operator/trace"
 )
 
 // KubeInformersForNamespaces is a simple way to combine several shared informers into a single struct with unified listing power
@@ -22,7 +25,10 @@ type KubeInformersForNamespaces interface {
 	SecretLister() corev1listers.SecretLister
 }
 
-func NewKubeInformersForNamespaces(kubeClient kubernetes.Interface, namespaces ...string) KubeInformersForNamespaces {
+func NewKubeInformersForNamespaces(ctx context.Context, kubeClient kubernetes.Interface, namespaces ...string) (context.Context, KubeInformersForNamespaces) {
+	ctx, span := trace.TraceProvider().Tracer("kube-informers").Start(ctx, "NewKubeInformersForNamespaces")
+	defer span.End()
+
 	ret := kubeInformersForNamespaces{}
 	for _, namespace := range namespaces {
 		if len(namespace) == 0 {
@@ -32,7 +38,7 @@ func NewKubeInformersForNamespaces(kubeClient kubernetes.Interface, namespaces .
 		ret[namespace] = informers.NewSharedInformerFactoryWithOptions(kubeClient, 10*time.Minute, informers.WithNamespace(namespace))
 	}
 
-	return ret
+	return ctx, ret
 }
 
 type kubeInformersForNamespaces map[string]informers.SharedInformerFactory

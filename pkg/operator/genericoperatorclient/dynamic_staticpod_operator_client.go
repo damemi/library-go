@@ -16,19 +16,24 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/rest"
+
+	"github.com/openshift/library-go/pkg/operator/trace"
 )
 
-func NewStaticPodOperatorClient(config *rest.Config, gvr schema.GroupVersionResource) (v1helpers.StaticPodOperatorClient, dynamicinformer.DynamicSharedInformerFactory, error) {
+func NewStaticPodOperatorClient(ctx context.Context, config *rest.Config, gvr schema.GroupVersionResource) (context.Context, v1helpers.StaticPodOperatorClient, dynamicinformer.DynamicSharedInformerFactory, error) {
+	ctx, span := trace.TraceProvider().Tracer("genericoperatorclient").Start(ctx, "NewStaticPodOperatorClient")
+	defer span.End()
+
 	dynamicClient, err := dynamic.NewForConfig(config)
 	if err != nil {
-		return nil, nil, err
+		return ctx, nil, nil, err
 	}
 	client := dynamicClient.Resource(gvr)
 
 	informers := dynamicinformer.NewDynamicSharedInformerFactory(dynamicClient, 12*time.Hour)
 	informer := informers.ForResource(gvr)
 
-	return &dynamicStaticPodOperatorClient{
+	return ctx, &dynamicStaticPodOperatorClient{
 		dynamicOperatorClient: dynamicOperatorClient{
 			informer: informer,
 			client:   client,
