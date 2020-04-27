@@ -26,7 +26,7 @@ type KubeInformersForNamespaces interface {
 }
 
 func NewKubeInformersForNamespaces(ctx context.Context, kubeClient kubernetes.Interface, namespaces ...string) (context.Context, KubeInformersForNamespaces) {
-	ctx, span := trace.TraceProvider().Tracer("kube-informers").Start(ctx, "NewKubeInformersForNamespaces")
+	ctx, span := trace.TraceProvider().Tracer("library-go/kube-informers").Start(ctx, "NewKubeInformersForNamespaces")
 	defer span.End()
 
 	ret := kubeInformersForNamespaces{}

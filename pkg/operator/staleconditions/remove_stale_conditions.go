@@ -9,6 +9,8 @@ import (
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
+
+	"github.com/openshift/library-go/pkg/operator/trace"
 )
 
 type RemoveStaleConditionsController struct {
@@ -17,18 +19,23 @@ type RemoveStaleConditionsController struct {
 }
 
 func NewRemoveStaleConditionsController(
+	ctx context.Context,
 	conditions []string,
 	operatorClient v1helpers.OperatorClient,
 	eventRecorder events.Recorder,
-) factory.Controller {
+) (context.Context, factory.Controller) {
+	ctx, span := trace.TraceProvider().Tracer("library-go/remove-stale-conditions").Start(ctx, "NewRemoveStaleConditionsController")
+	defer span.End()
 	c := &RemoveStaleConditionsController{
 		conditions:     conditions,
 		operatorClient: operatorClient,
 	}
-	return factory.New().ResyncEvery(time.Second).WithSync(c.sync).WithInformers(operatorClient.Informer()).ToController("RemoveStaleConditionsController", eventRecorder.WithComponentSuffix("remove-stale-conditions"))
+	return ctx, factory.New().ResyncEvery(time.Second).WithSync(c.sync).WithInformers(operatorClient.Informer()).ToController("RemoveStaleConditionsController", eventRecorder.WithComponentSuffix("remove-stale-conditions"))
 }
 
 func (c RemoveStaleConditionsController) sync(ctx context.Context, syncContext factory.SyncContext) error {
+	ctx, span := trace.TraceProvider().Tracer("library-go/remove-stale-conditions").Start(ctx, "sync")
+	defer span.End()
 	removeStaleConditionsFn := func(status *operatorv1.OperatorStatus) error {
 		for _, condition := range c.conditions {
 			v1helpers.RemoveOperatorCondition(&status.Conditions, condition)

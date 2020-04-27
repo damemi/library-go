@@ -21,7 +21,7 @@ import (
 )
 
 func NewStaticPodOperatorClient(ctx context.Context, config *rest.Config, gvr schema.GroupVersionResource) (context.Context, v1helpers.StaticPodOperatorClient, dynamicinformer.DynamicSharedInformerFactory, error) {
-	ctx, span := trace.TraceProvider().Tracer("genericoperatorclient").Start(ctx, "NewStaticPodOperatorClient")
+	ctx, span := trace.TraceProvider().Tracer("library-go/genericoperatorclient").Start(ctx, "NewStaticPodOperatorClient")
 	defer span.End()
 
 	dynamicClient, err := dynamic.NewForConfig(config)

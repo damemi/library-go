@@ -15,6 +15,8 @@ import (
 
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	operatorv1helpers "github.com/openshift/library-go/pkg/operator/v1helpers"
+
+	"github.com/openshift/library-go/pkg/operator/trace"
 )
 
 // baseController represents generic Kubernetes controller boiler-plate
@@ -102,6 +104,8 @@ func (c *baseController) Run(ctx context.Context, workers int) {
 }
 
 func (c *baseController) Sync(ctx context.Context, syncCtx SyncContext) error {
+	ctx, span := trace.TraceProvider().Tracer("library-go/base-controller-factory").Start(ctx, "Sync")
+	defer span.End()
 	return c.sync(ctx, syncCtx)
 }
 

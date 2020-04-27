@@ -63,7 +63,7 @@ func NewResourceSyncController(
 	eventRecorder events.Recorder,
 ) (context.Context, *ResourceSyncController) {
 
-	ctx, span := trace.TraceProvider().Tracer("resource-sync-controller").Start(ctx, "NewResourceSyncController")
+	ctx, span := trace.TraceProvider().Tracer("library-go/resource-sync-controller").Start(ctx, "NewResourceSyncController")
 	defer span.End()
 	c := &ResourceSyncController{
 		name:                 "ResourceSyncController",
@@ -140,6 +140,9 @@ func (c *ResourceSyncController) SyncSecret(destination, source ResourceLocation
 }
 
 func (c *ResourceSyncController) Sync(ctx context.Context, syncCtx factory.SyncContext) error {
+	ctx, span := trace.TraceProvider().Tracer("library-go/resourcesync-controller").Start(ctx, "sync")
+	defer span.End()
+
 	operatorSpec, _, _, err := c.operatorConfigClient.GetOperatorState()
 	if err != nil {
 		return err

@@ -26,6 +26,8 @@ import (
 	"github.com/openshift/library-go/pkg/operator/management"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
+
+	"github.com/openshift/library-go/pkg/operator/trace"
 )
 
 const (
@@ -58,13 +60,16 @@ type StaticResourceController struct {
 // NewStaticResourceController returns a controller that maintains certain static manifests. Most "normal" types are supported,
 // but feel free to add ones we missed.  Use .AddInformer(), .AddKubeInformers(), .AddNamespaceInformer or to provide triggering conditions.
 func NewStaticResourceController(
+	ctx context.Context,
 	name string,
 	manifests resourceapply.AssetFunc,
 	files []string,
 	clients *resourceapply.ClientHolder,
 	operatorClient v1helpers.OperatorClient,
 	eventRecorder events.Recorder,
-) *StaticResourceController {
+) (context.Context, *StaticResourceController) {
+	ctx, span := trace.TraceProvider().Tracer("library-go/static-resource-controller").Start(ctx, "NewStaticResourceController")
+	defer span.End()
 	c := &StaticResourceController{
 		name:      name,
 		manifests: manifests,
@@ -78,7 +83,7 @@ func NewStaticResourceController(
 		factory: factory.New().WithInformers(operatorClient.Informer()).ResyncEvery(1 * time.Minute),
 	}
 
-	return c
+	return ctx, c
 }
 
 func (c *StaticResourceController) AddKubeInformers(kubeInformersByNamespace v1helpers.KubeInformersForNamespaces) *StaticResourceController {
@@ -162,6 +167,9 @@ func (c *StaticResourceController) AddNamespaceInformer(informer cache.SharedInd
 }
 
 func (c StaticResourceController) Sync(ctx context.Context, syncContext factory.SyncContext) error {
+	ctx, span := trace.TraceProvider().Tracer("library-go/static-resource-controller").Start(ctx, "sync")
+	defer span.End()
+
 	operatorSpec, _, _, err := c.operatorClient.GetOperatorState()
 	if err != nil {
 		return err

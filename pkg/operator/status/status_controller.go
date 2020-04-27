@@ -22,6 +22,8 @@ import (
 	"github.com/openshift/library-go/pkg/operator/management"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	operatorv1helpers "github.com/openshift/library-go/pkg/operator/v1helpers"
+
+	"github.com/openshift/library-go/pkg/operator/trace"
 )
 
 type VersionGetter interface {
@@ -54,6 +56,7 @@ func (c *StatusSyncer) Name() string {
 }
 
 func NewClusterOperatorStatusController(
+	ctx context.Context,
 	name string,
 	relatedObjects []configv1.ObjectReference,
 	clusterOperatorClient configv1client.ClusterOperatorsGetter,
@@ -61,8 +64,10 @@ func NewClusterOperatorStatusController(
 	operatorClient operatorv1helpers.OperatorClient,
 	versionGetter VersionGetter,
 	recorder events.Recorder,
-) *StatusSyncer {
-	return &StatusSyncer{
+) (context.Context, *StatusSyncer) {
+	ctx, span := trace.TraceProvider().Tracer("library-go/status-controller").Start(ctx, "NewClusterOperatorStatusController")
+	defer span.End()
+	return ctx, &StatusSyncer{
 		clusterOperatorName:   name,
 		relatedObjects:        relatedObjects,
 		versionGetter:         versionGetter,
@@ -93,6 +98,9 @@ func (c *StatusSyncer) WithDegradedInertia(inertia Inertia) *StatusSyncer {
 // sync reacts to a change in prereqs by finding information that is required to match another value in the cluster. This
 // must be information that is logically "owned" by another component.
 func (c StatusSyncer) Sync(ctx context.Context, syncCtx factory.SyncContext) error {
+	ctx, span := trace.TraceProvider().Tracer("library-go/status-controller").Start(ctx, "Sync")
+	defer span.End()
+
 	detailedSpec, currentDetailedStatus, _, err := c.operatorClient.GetOperatorState()
 	if apierrors.IsNotFound(err) {
 		syncCtx.Recorder().Warningf("StatusNotFound", "Unable to determine current operator status for clusteroperator/%s", c.clusterOperatorName)

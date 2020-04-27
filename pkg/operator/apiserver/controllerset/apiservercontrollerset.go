@@ -116,7 +116,8 @@ func (cs *APIServerControllerSet) WithClusterOperatorStatusController(
 	clusterOperatorInformer configv1informers.ClusterOperatorInformer,
 	versionRecorder status.VersionGetter,
 ) *APIServerControllerSet {
-	cs.clusterOperatorStatusController.controller = status.NewClusterOperatorStatusController(
+	_, cs.clusterOperatorStatusController.controller = status.NewClusterOperatorStatusController(
+		context.Background(),
 		clusterOperatorName,
 		relatedObjects,
 		clusterOperatorClient,
@@ -188,14 +189,16 @@ func (cs *APIServerControllerSet) WithStaticResourcesController(
 	kubeInformersForNamespaces v1helpers.KubeInformersForNamespaces,
 	kubeClient kubernetes.Interface,
 ) *APIServerControllerSet {
-	cs.staticResourceController.controller = staticresourcecontroller.NewStaticResourceController(
+	_, resourceController := staticresourcecontroller.NewStaticResourceController(
+		context.Background(),
 		controllerName,
 		manifests,
 		files,
 		resourceapply.NewKubeClientHolder(kubeClient),
 		cs.operatorClient,
 		cs.eventRecorder,
-	).AddKubeInformers(kubeInformersForNamespaces)
+	)
+	cs.staticResourceController.controller = resourceController.AddKubeInformers(kubeInformersForNamespaces)
 
 	return cs
 }

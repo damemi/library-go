@@ -1,6 +1,7 @@
 package staticpod
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/openshift/library-go/pkg/controller/manager"
@@ -90,7 +91,7 @@ type Builder interface {
 	// the installer pod is created for a revision.
 	WithCustomInstaller(command []string, installerPodMutationFunc installer.InstallerPodMutationFunc) Builder
 	WithPruning(command []string, staticPodPrefix string) Builder
-	ToControllers() (manager.ControllerManager, error)
+	ToControllers(ctx context.Context) (context.Context, manager.ControllerManager, error)
 }
 
 func (b *staticPodOperatorControllerBuilder) WithEvents(eventRecorder events.Recorder) Builder {
@@ -150,7 +151,7 @@ func (b *staticPodOperatorControllerBuilder) WithPruning(command []string, stati
 	return b
 }
 
-func (b *staticPodOperatorControllerBuilder) ToControllers() (manager.ControllerManager, error) {
+func (b *staticPodOperatorControllerBuilder) ToControllers(ctx context.Context) (context.Context, manager.ControllerManager, error) {
 	manager := manager.NewControllerManager()
 
 	eventRecorder := b.eventRecorder
@@ -259,7 +260,8 @@ func (b *staticPodOperatorControllerBuilder) ToControllers() (manager.Controller
 	), 1)
 
 	// this cleverly sets the same condition that used to be set because of the way that the names are constructed
-	manager.WithController(staticresourcecontroller.NewStaticResourceController(
+	ctx, resourceController := staticresourcecontroller.NewStaticResourceController(
+		ctx,
 		"BackingResourceController",
 		backingresource.StaticPodManifests(b.operandNamespace),
 		[]string{
@@ -268,8 +270,8 @@ func (b *staticPodOperatorControllerBuilder) ToControllers() (manager.Controller
 		},
 		resourceapply.NewKubeClientHolder(b.kubeClient),
 		b.staticPodOperatorClient,
-		eventRecorder,
-	).AddKubeInformers(b.kubeInformers), 1)
+		eventRecorder)
+	manager.WithController(resourceController.AddKubeInformers(b.kubeInformers), 1)
 
 	if b.dynamicClient != nil && b.enableServiceMonitorController {
 		manager.WithController(monitoring.NewMonitoringResourceController(
@@ -286,5 +288,5 @@ func (b *staticPodOperatorControllerBuilder) ToControllers() (manager.Controller
 	manager.WithController(unsupportedconfigoverridescontroller.NewUnsupportedConfigOverridesController(b.staticPodOperatorClient, eventRecorder), 1)
 	manager.WithController(loglevel.NewClusterOperatorLoggingController(b.staticPodOperatorClient, eventRecorder), 1)
 
-	return manager, errors.NewAggregate(errs)
+	return ctx, manager, errors.NewAggregate(errs)
 }

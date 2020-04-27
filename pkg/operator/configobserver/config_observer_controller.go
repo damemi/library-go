@@ -24,6 +24,8 @@ import (
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resourcesynccontroller"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
+
+	"github.com/openshift/library-go/pkg/operator/trace"
 )
 
 // Listers is an interface which will be passed to the config observer funcs.  It is expected to be hard-cast to the "correct" type
@@ -50,24 +52,30 @@ type ConfigObserver struct {
 }
 
 func NewConfigObserver(
+	ctx context.Context,
 	operatorClient v1helpers.OperatorClient,
 	eventRecorder events.Recorder,
 	listers Listers,
 	informers []factory.Informer,
 	observers ...ObserveConfigFunc,
-) factory.Controller {
+) (context.Context, factory.Controller) {
+	ctx, span := trace.TraceProvider().Tracer("library-go/config-observer-controller").Start(ctx, "NewConfigObserver")
+	defer span.End()
 	c := &ConfigObserver{
 		operatorClient: operatorClient,
 		observers:      observers,
 		listers:        listers,
 	}
 
-	return factory.New().ResyncEvery(time.Second).WithSync(c.sync).WithInformers(append(informers, listersToInformer(listers)...)...).ToController("ConfigObserver", eventRecorder.WithComponentSuffix("config-observer"))
+	return ctx, factory.New().ResyncEvery(time.Second).WithSync(c.sync).WithInformers(append(informers, listersToInformer(listers)...)...).ToController("ConfigObserver", eventRecorder.WithComponentSuffix("config-observer"))
 }
 
 // sync reacts to a change in prereqs by finding information that is required to match another value in the cluster. This
 // must be information that is logically "owned" by another component.
 func (c ConfigObserver) sync(ctx context.Context, syncCtx factory.SyncContext) error {
+	ctx, span := trace.TraceProvider().Tracer("library-go/config-observer-controller").Start(ctx, "sync")
+	defer span.End()
+
 	originalSpec, _, _, err := c.operatorClient.GetOperatorState()
 	if err != nil {
 		return err
