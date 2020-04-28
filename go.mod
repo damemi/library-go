@@ -53,6 +53,7 @@ require (
 	github.com/xlab/handysort v0.0.0-20150421192137-fb3537ed64a1 // indirect
 	go.opentelemetry.io/otel v0.4.3
 	go.opentelemetry.io/otel/exporters/otlp v0.4.3
+	go.opentelemetry.io/otel/exporters/trace/jaeger v0.4.3
 	golang.org/x/crypto v0.0.0-20200220183623-bac4c82f6975
 	golang.org/x/net v0.0.0-20200421231249-e086a090c8fd
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
