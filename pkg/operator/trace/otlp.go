@@ -2,6 +2,7 @@ package trace
 
 import (
 	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/exporters/otlp"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
@@ -25,4 +26,8 @@ func NewOTLPExporterAndProvider(endpoint string) (*otlp.Exporter, *sdktrace.Prov
 	}
 	global.SetTraceProvider(provider)
 	return exporter, provider, nil
+}
+
+func TraceProvider() (trace.Provider) {
+	return global.TraceProvider()
 }
